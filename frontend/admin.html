@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>VVS Admin Panel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --navy: #0d1f38; --navy-light: #1b4580; --gold: #c9a227;
+      --gold-light: #e8cd76; --white: #fff; --off: #f7f8fc;
+      --silver: #e2e6ef; --slate: #8892a4; --ink: #111827;
+      --success: #16a34a; --danger: #dc2626; --r: 8px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Jost', sans-serif; background: var(--off); color: var(--ink); }
+
+    /* ── Login Screen ── */
+    #login-screen {
+      min-height: 100vh; display: flex; align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, var(--navy) 0%, #143460 100%);
+    }
+    .login-card {
+      background: var(--white); border-radius: 16px; padding: 3rem 2.5rem;
+      width: 100%; max-width: 400px; box-shadow: 0 24px 64px rgba(6,13,23,0.35);
+      position: relative; overflow: hidden;
+    }
+    .login-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, var(--gold), var(--navy-light), var(--gold));
+    }
+    .login-logo { text-align: center; margin-bottom: 2rem; }
+    .login-logo h2 { font-size: 1.4rem; font-weight: 700; color: var(--navy); }
+    .login-logo p  { font-size: 0.8rem; color: var(--slate); margin-top: 0.3rem; }
+
+    /* ── Admin Layout ── */
+    #admin-screen { display: none; min-height: 100vh; }
+    .admin-header {
+      background: var(--navy); color: var(--white); padding: 0 2rem;
+      height: 64px; display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 2px 16px rgba(6,13,23,0.3);
+    }
+    .admin-header h1 { font-size: 1rem; font-weight: 600; }
+    .admin-header h1 span { color: var(--gold); }
+    .admin-body { display: flex; }
+    .sidebar {
+      width: 220px; background: var(--white); min-height: calc(100vh - 64px);
+      border-right: 1px solid var(--silver); flex-shrink: 0;
+      padding: 1.5rem 0; position: sticky; top: 64px; height: calc(100vh - 64px);
+    }
+    .sidebar a {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.75rem 1.5rem; font-size: 0.88rem; font-weight: 500;
+      color: var(--slate); cursor: pointer; transition: 0.2s;
+      border-left: 3px solid transparent; text-decoration: none;
+    }
+    .sidebar a:hover, .sidebar a.active {
+      color: var(--navy); background: var(--off); border-left-color: var(--gold);
+    }
+    .main { flex: 1; padding: 2rem; }
+
+    /* ── Cards ── */
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .panel-title {
+      font-size: 1.4rem; font-weight: 700; color: var(--navy);
+      margin-bottom: 1.5rem; padding-bottom: 0.75rem;
+      border-bottom: 2px solid var(--gold);
+    }
+    .card {
+      background: var(--white); border-radius: var(--r); padding: 1.75rem;
+      border: 1px solid var(--silver); margin-bottom: 1.5rem;
+      box-shadow: 0 2px 8px rgba(6,13,23,0.05);
+    }
+    .card h3 { font-size: 1rem; font-weight: 600; margin-bottom: 1.2rem; color: var(--navy); }
+
+    /* ── Form Elements ── */
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .form-group { margin-bottom: 1rem; }
+    .form-group label {
+      display: block; font-size: 0.72rem; font-weight: 600;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--slate); margin-bottom: 0.4rem;
+    }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; padding: 0.75rem 1rem;
+      border: 1.5px solid var(--silver); border-radius: 6px;
+      font-size: 0.9rem; font-family: 'Jost', sans-serif;
+      color: var(--ink); background: var(--off); outline: none; transition: 0.15s;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      border-color: var(--gold); background: var(--white);
+      box-shadow: 0 0 0 3px rgba(201,162,39,0.12);
+    }
+    .form-group textarea { resize: vertical; min-height: 90px; }
+
+    /* ── Buttons ── */
+    .btn {
+      padding: 0.7rem 1.5rem; border-radius: 6px; font-size: 0.82rem;
+      font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+      cursor: pointer; border: none; transition: 0.2s;
+    }
+    .btn-primary { background: var(--navy); color: var(--white); }
+    .btn-primary:hover { background: #143460; }
+    .btn-gold { background: var(--gold); color: var(--navy); }
+    .btn-gold:hover { background: var(--gold-light); }
+    .btn-danger { background: var(--danger); color: var(--white); font-size: 0.75rem; padding: 0.4rem 0.9rem; }
+    .btn-logout { background: transparent; border: 1px solid rgba(255,255,255,0.3); color: var(--white); }
+    .btn-logout:hover { background: rgba(255,255,255,0.1); }
+
+    /* ── Table ── */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+    th {
+      background: var(--navy); color: var(--white); padding: 0.75rem 1rem;
+      text-align: left; font-weight: 600; font-size: 0.75rem; letter-spacing: 0.08em;
+    }
+    td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--silver); color: var(--ink); }
+    tr:hover td { background: var(--off); }
+
+    /* ── Status badges ── */
+    .badge {
+      display: inline-block; padding: 0.2rem 0.7rem; border-radius: 999px;
+      font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em;
+    }
+    .badge-pending  { background: #fef3c7; color: #92400e; }
+    .badge-contacted{ background: #dbeafe; color: #1e40af; }
+    .badge-admitted { background: #dcfce7; color: #15803d; }
+    .badge-rejected { background: #fee2e2; color: #991b1b; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; bottom: 2rem; left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--navy); color: var(--white);
+      padding: 0.85rem 2rem; border-radius: 6px;
+      font-size: 0.88rem; box-shadow: 0 8px 32px rgba(6,13,23,0.3);
+      border: 1px solid rgba(201,162,39,0.3); transition: transform 0.4s;
+      z-index: 9999; white-space: nowrap;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── Stats row ── */
+    .stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 1rem; margin-bottom: 2rem; }
+    .stat-box {
+      background: var(--white); border: 1px solid var(--silver);
+      border-radius: var(--r); padding: 1.5rem; text-align: center;
+      border-top: 3px solid var(--gold);
+    }
+    .stat-box .num { font-size: 2rem; font-weight: 700; color: var(--navy); }
+    .stat-box .lbl { font-size: 0.75rem; color: var(--slate); margin-top: 0.2rem; text-transform: uppercase; letter-spacing: 0.1em; }
+
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .form-row { grid-template-columns: 1fr; }
+      .stats-row { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════ LOGIN SCREEN ══════════════ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <h2>VVS Admin Panel</h2>
+      <p>Vagbharathi Vidhya Samasthe</p>
+    </div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="login-email" placeholder="admin@vagbharathi.edu.in"/>
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="login-password" placeholder="••••••••"/>
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:0.5rem" onclick="login()">Login</button>
+    <p id="login-error" style="color:var(--danger);font-size:0.82rem;margin-top:0.75rem;text-align:center;"></p>
+  </div>
+</div>
+
+<!-- ══════════════ ADMIN SCREEN ══════════════ -->
+<div id="admin-screen">
+  <div class="admin-header">
+    <h1>VVS <span>Admin Panel</span></h1>
+    <button class="btn btn-logout" onclick="logout()">Logout</button>
+  </div>
+  <div class="admin-body">
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <a class="active" onclick="showPanel('dashboard')">📊 Dashboard</a>
+      <a onclick="showPanel('news')">📰 News & Events</a>
+      <a onclick="showPanel('notices')">📋 Notices</a>
+      <a onclick="showPanel('faculty')">👨‍🏫 Faculty</a>
+      <a onclick="showPanel('gallery')">🖼️ Gallery</a>
+      <a onclick="showPanel('admissions')">📝 Admissions</a>
+    </div>
+
+    <!-- Main content -->
+    <div class="main">
+
+      <!-- Dashboard -->
+      <div class="panel active" id="panel-dashboard">
+        <div class="panel-title">Dashboard</div>
+        <div class="stats-row">
+          <div class="stat-box"><div class="num" id="stat-news">–</div><div class="lbl">News Posts</div></div>
+          <div class="stat-box"><div class="num" id="stat-faculty">–</div><div class="lbl">Faculty</div></div>
+          <div class="stat-box"><div class="num" id="stat-gallery">–</div><div class="lbl">Gallery Photos</div></div>
+          <div class="stat-box"><div class="num" id="stat-admissions">–</div><div class="lbl">Enquiries</div></div>
+        </div>
+        <div class="card">
+          <h3>Welcome back! 👋</h3>
+          <p style="color:var(--slate);font-size:0.9rem;line-height:1.8;">
+            Use the sidebar to manage your school website content.<br/>
+            All changes reflect on the website immediately.
+          </p>
+        </div>
+      </div>
+
+      <!-- News -->
+      <div class="panel" id="panel-news">
+        <div class="panel-title">News & Events</div>
+        <div class="card">
+          <h3>Add News</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Title</label>
+              <input type="text" id="news-title" placeholder="e.g. Annual Day 2025"/>
+            </div>
+            <div class="form-group">
+              <label>Category</label>
+              <select id="news-category">
+                <option>Achievement</option><option>Event</option>
+                <option>Sports</option><option>Academics</option><option>General</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Content</label>
+            <textarea id="news-content" placeholder="Write the full news content here..."></textarea>
+          </div>
+          <button class="btn btn-gold" onclick="addNews()">Add News</button>
+        </div>
+        <div class="card">
+          <h3>All News</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Title</th><th>Category</th><th>Date</th><th>Action</th></tr></thead>
+              <tbody id="news-table"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notices -->
+      <div class="panel" id="panel-notices">
+        <div class="panel-title">Notices</div>
+        <div class="card">
+          <h3>Add Notice</h3>
+          <div class="form-group">
+            <label>Title</label>
+            <input type="text" id="notice-title" placeholder="Notice title"/>
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <textarea id="notice-desc" placeholder="Notice details..."></textarea>
+          </div>
+          <button class="btn btn-gold" onclick="addNotice()">Add Notice</button>
+        </div>
+        <div class="card">
+          <h3>All Notices</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Title</th><th>Description</th><th>Date</th><th>Action</th></tr></thead>
+              <tbody id="notice-table"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Faculty -->
+      <div class="panel" id="panel-faculty">
+        <div class="panel-title">Faculty</div>
+        <div class="card">
+          <h3>Add Faculty Member</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Full Name</label>
+              <input type="text" id="faculty-name" placeholder="e.g. Mrs. Savitha Rao"/>
+            </div>
+            <div class="form-group">
+              <label>Role / Designation</label>
+              <input type="text" id="faculty-role" placeholder="e.g. Head of Sciences"/>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Department</label>
+              <input type="text" id="faculty-dept" placeholder="e.g. Science"/>
+            </div>
+            <div class="form-group">
+              <label>Qualification</label>
+              <input type="text" id="faculty-qual" placeholder="e.g. M.Sc. Chemistry"/>
+            </div>
+          </div>
+          <button class="btn btn-gold" onclick="addFaculty()">Add Faculty</button>
+        </div>
+        <div class="card">
+          <h3>All Faculty</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Name</th><th>Role</th><th>Department</th><th>Qualification</th><th>Action</th></tr></thead>
+              <tbody id="faculty-table"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gallery -->
+      <div class="panel" id="panel-gallery">
+        <div class="panel-title">Gallery</div>
+        <div class="card">
+          <h3>Add Gallery Photo</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Photo Label / Caption</label>
+              <input type="text" id="gallery-label" placeholder="e.g. Annual Sports Day"/>
+            </div>
+            <div class="form-group">
+              <label>Image URL</label>
+              <input type="text" id="gallery-url" placeholder="https://... (upload to Cloudinary first)"/>
+            </div>
+          </div>
+          <p style="font-size:0.78rem;color:var(--slate);margin-bottom:1rem;">
+            💡 Upload photo at <a href="https://cloudinary.com" target="_blank" style="color:var(--navy-light)">cloudinary.com</a> (free) → copy the URL → paste above
+          </p>
+          <button class="btn btn-gold" onclick="addGallery()">Add Photo</button>
+        </div>
+        <div class="card">
+          <h3>All Photos</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Preview</th><th>Label</th><th>Action</th></tr></thead>
+              <tbody id="gallery-table"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Admissions -->
+      <div class="panel" id="panel-admissions">
+        <div class="panel-title">Admission Enquiries</div>
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Student</th><th>Parent</th><th>Class</th><th>Phone</th><th>Status</th><th>Date</th><th>Action</th></tr></thead>
+              <tbody id="admission-table"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end main -->
+  </div><!-- end admin-body -->
+</div><!-- end admin-screen -->
+
+<div id="toast"></div>
+
+<script>
+  // ── CONFIG — change this to your deployed backend URL ──
+  // Ensure this matches backend port (default is 3000 in server.js)
+  const API = "http://localhost:3000/api";
+  let TOKEN = localStorage.getItem("vvs_token") || "";
+
+  // ── On load ──────────────────────────────────────────────
+  window.onload = () => {
+    if (TOKEN) showAdmin();
+  };
+
+  // ── Auth ─────────────────────────────────────────────────
+  async function login() {
+    const email    = document.getElementById("login-email").value.trim();
+    const password = document.getElementById("login-password").value;
+    if (!email || !password) return toast("Fill in all fields");
+    try {
+      const res  = await fetch(`${API}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (!res.ok) return document.getElementById("login-error").textContent = data.error;
+      TOKEN = data.token;
+      localStorage.setItem("vvs_token", TOKEN);
+      showAdmin();
+    } catch(e) { document.getElementById("login-error").textContent = "Cannot connect to server"; }
+  }
+
+  function logout() {
+    TOKEN = ""; localStorage.removeItem("vvs_token");
+    document.getElementById("admin-screen").style.display = "none";
+    document.getElementById("login-screen").style.display = "flex";
+  }
+
+  function showAdmin() {
+    document.getElementById("login-screen").style.display = "none";
+    document.getElementById("admin-screen").style.display = "block";
+    loadDashboard();
+    loadNews(); loadNotices(); loadFaculty(); loadGallery(); loadAdmissions();
+  }
+
+  // ── Panel navigation ──────────────────────────────────────
+  function showPanel(name) {
+    document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+    document.querySelectorAll(".sidebar a").forEach(a => a.classList.remove("active"));
+    document.getElementById("panel-" + name).classList.add("active");
+    event.target.classList.add("active");
+  }
+
+  // ── Dashboard ─────────────────────────────────────────────
+  async function loadDashboard() {
+    const [news, faculty, gallery, admissions] = await Promise.all([
+      apiFetch("/news"), apiFetch("/faculty"),
+      apiFetch("/gallery"), apiFetch("/admissions")
+    ]);
+    document.getElementById("stat-news").textContent       = news?.length ?? "–";
+    document.getElementById("stat-faculty").textContent    = faculty?.length ?? "–";
+    document.getElementById("stat-gallery").textContent    = gallery?.length ?? "–";
+    document.getElementById("stat-admissions").textContent = admissions?.length ?? "–";
+  }
+
+  // ── Generic fetch ─────────────────────────────────────────
+  async function apiFetch(path, method="GET", body=null) {
+    const opts = {
+      method,
+      headers: { "Content-Type":"application/json", "Authorization": `Bearer ${TOKEN}` }
+    };
+    if (body) opts.body = JSON.stringify(body);
+    try {
+      const res = await fetch(API + path, opts);
+      return await res.json();
+    } catch(e) { return null; }
+  }
+
+  // ── News ──────────────────────────────────────────────────
+  async function loadNews() {
+    const news = await apiFetch("/news");
+    const tbody = document.getElementById("news-table");
+    if (!news || !news.length) { tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--slate)">No news yet</td></tr>`; return; }
+    tbody.innerHTML = news.map(n => `
+      <tr>
+        <td><strong>${n.title}</strong></td>
+        <td>${n.category}</td>
+        <td>${n.date}</td>
+        <td><button class="btn btn-danger" onclick="deleteItem('/news/${n._id}', loadNews)">Delete</button></td>
+      </tr>`).join("");
+  }
+
+  async function addNews() {
+    const title    = document.getElementById("news-title").value.trim();
+    const category = document.getElementById("news-category").value;
+    const content  = document.getElementById("news-content").value.trim();
+    if (!title || !content) return toast("Fill in all fields");
+    await apiFetch("/news/add", "POST", { title, category, content });
+    toast("✅ News added!");
+    document.getElementById("news-title").value = "";
+    document.getElementById("news-content").value = "";
+    loadNews(); loadDashboard();
+  }
+
+  // ── Notices ───────────────────────────────────────────────
+  async function loadNotices() {
+    const notices = await apiFetch("/notices");
+    const tbody = document.getElementById("notice-table");
+    if (!notices || !notices.length) { tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--slate)">No notices yet</td></tr>`; return; }
+    tbody.innerHTML = notices.map(n => `
+      <tr>
+        <td><strong>${n.title}</strong></td>
+        <td>${n.description?.substring(0,60)}...</td>
+        <td>${n.date}</td>
+        <td><button class="btn btn-danger" onclick="deleteItem('/notices/${n._id}', loadNotices)">Delete</button></td>
+      </tr>`).join("");
+  }
+
+  async function addNotice() {
+    const title       = document.getElementById("notice-title").value.trim();
+    const description = document.getElementById("notice-desc").value.trim();
+    if (!title || !description) return toast("Fill in all fields");
+    await apiFetch("/notices/add", "POST", { title, description });
+    toast("✅ Notice added!");
+    document.getElementById("notice-title").value = "";
+    document.getElementById("notice-desc").value  = "";
+    loadNotices();
+  }
+
+  // ── Faculty ───────────────────────────────────────────────
+  async function loadFaculty() {
+    const faculty = await apiFetch("/faculty");
+    const tbody = document.getElementById("faculty-table");
+    if (!faculty || !faculty.length) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--slate)">No faculty added yet</td></tr>`; return; }
+    tbody.innerHTML = faculty.map(f => `
+      <tr>
+        <td><strong>${f.name}</strong></td>
+        <td>${f.role}</td>
+        <td>${f.department}</td>
+        <td>${f.qualification || "–"}</td>
+        <td><button class="btn btn-danger" onclick="deleteItem('/faculty/${f._id}', loadFaculty)">Delete</button></td>
+      </tr>`).join("");
+  }
+
+  async function addFaculty() {
+    const name          = document.getElementById("faculty-name").value.trim();
+    const role          = document.getElementById("faculty-role").value.trim();
+    const department    = document.getElementById("faculty-dept").value.trim();
+    const qualification = document.getElementById("faculty-qual").value.trim();
+    const initials      = name.split(" ").map(w => w[0]).join("").toUpperCase().substring(0,2);
+    if (!name || !role || !department) return toast("Fill in required fields");
+    await apiFetch("/faculty/add", "POST", { name, role, department, qualification, initials });
+    toast("✅ Faculty added!");
+    ["faculty-name","faculty-role","faculty-dept","faculty-qual"].forEach(id => document.getElementById(id).value = "");
+    loadFaculty(); loadDashboard();
+  }
+
+  // ── Gallery ───────────────────────────────────────────────
+  async function loadGallery() {
+    const items = await apiFetch("/gallery");
+    const tbody = document.getElementById("gallery-table");
+    if (!items || !items.length) { tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--slate)">No photos yet</td></tr>`; return; }
+    tbody.innerHTML = items.map(g => `
+      <tr>
+        <td><img src="${g.imageUrl}" style="width:70px;height:50px;object-fit:cover;border-radius:4px;" onerror="this.style.display='none'"/></td>
+        <td>${g.label}</td>
+        <td><button class="btn btn-danger" onclick="deleteItem('/gallery/${g._id}', loadGallery)">Delete</button></td>
+      </tr>`).join("");
+  }
+
+  async function addGallery() {
+    const label    = document.getElementById("gallery-label").value.trim();
+    const imageUrl = document.getElementById("gallery-url").value.trim();
+    if (!label || !imageUrl) return toast("Fill in all fields");
+    await apiFetch("/gallery/add", "POST", { label, imageUrl });
+    toast("✅ Photo added!");
+    document.getElementById("gallery-label").value = "";
+    document.getElementById("gallery-url").value   = "";
+    loadGallery(); loadDashboard();
+  }
+
+  // ── Admissions ────────────────────────────────────────────
+  async function loadAdmissions() {
+    const list = await apiFetch("/admissions");
+    const tbody = document.getElementById("admission-table");
+    if (!list || !list.length) { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--slate)">No enquiries yet</td></tr>`; return; }
+    tbody.innerHTML = list.map(a => `
+      <tr>
+        <td><strong>${a.studentName}</strong></td>
+        <td>${a.parentName}</td>
+        <td>${a.classApplied}</td>
+        <td>${a.phone}</td>
+        <td>
+          <select onchange="updateStatus('${a._id}', this.value)" style="padding:0.3rem;border-radius:4px;border:1px solid var(--silver);font-family:Jost,sans-serif;font-size:0.8rem;">
+            ${["Pending","Contacted","Admitted","Rejected"].map(s =>
+              `<option ${a.status===s?"selected":""}>${s}</option>`
+            ).join("")}
+          </select>
+        </td>
+        <td>${new Date(a.submittedAt).toLocaleDateString("en-IN")}</td>
+        <td><button class="btn btn-danger" onclick="deleteItem('/admissions/${a._id}', loadAdmissions)">Delete</button></td>
+      </tr>`).join("");
+  }
+
+  async function updateStatus(id, status) {
+    await apiFetch(`/admissions/${id}`, "PUT", { status });
+    toast("✅ Status updated");
+  }
+
+  // ── Shared delete ─────────────────────────────────────────
+  async function deleteItem(path, reloadFn) {
+    if (!confirm("Are you sure you want to delete this?")) return;
+    await apiFetch(path, "DELETE");
+    toast("🗑️ Deleted");
+    reloadFn();
+    loadDashboard();
+  }
+
+  // ── Toast ─────────────────────────────────────────────────
+  function toast(msg) {
+    const el = document.getElementById("toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    setTimeout(() => el.classList.remove("show"), 3000);
+  }
+</script>
+</body>
+</html>
